@@ -1,13 +1,26 @@
-import { Controller, Get, Post, Body, Param, Delete, Patch, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  Patch,
+  UseGuards,
+  Request,
+  Query,
+  ValidationPipe,
+} from '@nestjs/common';
 import { TodosService } from './todos.service';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { QueryTodoDto } from './dto/query.dto';
 
 @Controller('todos')
 @UseGuards(JwtAuthGuard)
 export class TodosController {
-  constructor(private readonly todosService: TodosService) { }
+  constructor(private readonly todosService: TodosService) {}
 
   @Post()
   create(@Request() req, @Body() dto: CreateTodoDto) {
@@ -15,13 +28,30 @@ export class TodosController {
   }
 
   @Get()
-  findAll(@Request() req) {
-    return this.todosService.findAll(req.user.userId, false);
+  findAll(
+    @Request() req,
+    @Query(new ValidationPipe({ transform: true })) query: QueryTodoDto,
+  ) {
+    const completed =
+      typeof query.completed === 'string'
+        ? query.completed
+        : 'false';
+
+    return this.todosService.findAll(req.user.userId, {
+      ...query,
+      completed,
+    });
   }
 
   @Get('completed')
-  findCompleted(@Request() req) {
-    return this.todosService.findAll(req.user.userId, true);
+  findCompleted(
+    @Request() req,
+    @Query(new ValidationPipe({ transform: true })) query: QueryTodoDto,
+  ) {
+    return this.todosService.findAll(req.user.userId, {
+      ...query,
+      completed: 'true',
+    });
   }
 
   @Patch(':id')
